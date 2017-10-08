@@ -84,9 +84,14 @@ function start_oteo {
 	docker build -t $API_REST_IMAGE_NAME:$API_REST_IMAGE_TAG .
 
 	docker run -d --link=$DATABASE_CONTAINER_NAME --name=$API_REST_CONTAINER_NAME \
-	-e DATABASE_URL=$DATABASE_URL \
-	-e DATABASE_USER=$DATABASE_USER \
-	-e DATABASE_PASSWORD=$DATABASE_PASSWORD \
+	-e SPRING_DATASOURCE_URL=$SPRING_DATASOURCE_URL \
+	-e SPRING_DATASOURCE_USERNAME=$SPRING_DATASOURCE_USERNAME \
+	-e SPRING_DATASOURCE_PASSWORD=$SPRING_DATASOURCE_PASSWORD \
+	-e SPRING_DATASOURCE_INITIAL_SIZE=$SPRING_DATASOURCE_INITIAL_SIZE \
+	-e SPRING_DATASOURCE_MAX_WAIT_MILLIS=$SPRING_DATASOURCE_MAX_WAIT_MILLIS \
+	-e SPRING_DATASOURCE_MAX_ACTIVE=$SPRING_DATASOURCE_MAX_ACTIVE \
+	-e SPRING_DATASOURCE_MIN_INDLE=$SPRING_DATASOURCE_MIN_INDLE \
+	-e SPRING_DATASOURCE_MAX_IDLE=$SPRING_DATASOURCE_MAX_IDLE \
 	-p 18080:8080 \
 	-p 18081:8081 \
 	$API_REST_IMAGE_NAME:$API_REST_IMAGE_TAG
@@ -113,6 +118,32 @@ function start_oteo {
 	cd $OTEO_AUTO_DEPLOY
 	}
 
+function execute_liquibase {
+
+	environment=$1
+	shift
+
+	cd $OTEO_DATABASE_LIQUIBASE
+
+	case $environment in
+
+		stage)
+			mvn liquibase:update -P stage
+			;;
+
+		production)
+			mvn liquibase:update -P production
+			;;
+
+		*)
+			echo 'Invalid option, use: . oteo.sh help'
+			;;
+
+	esac
+
+	cd $OTEO_AUTO_DEPLOY
+	}
+
 # Init function
 function oteo {
 
@@ -120,6 +151,7 @@ function oteo {
 	initTimeDate=$(date)
 
 	opc=$1
+	environment=$2
 	shift
 
 	case $opc in
@@ -131,6 +163,10 @@ function oteo {
 
 		stop)
 			stop_oteo
+			;;
+
+		liquibase)
+			execute_liquibase $environment
 			;;
 
 		*)

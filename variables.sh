@@ -28,9 +28,14 @@ export POSTGRES_DB="oteo-database"
 export POSTGRES_PASSWORD="postgres"
 
 # oteo-parent environment variables
-export DATABASE_URL="jdbc:postgresql://oteo-database-container:5432/oteo-database"
-export DATABASE_USER="postgres"
-export DATABASE_PASSWORD="postgres"
+export SPRING_DATASOURCE_URL="jdbc:postgresql://oteo-database-container:5432/oteo-database"
+export SPRING_DATASOURCE_USERNAME="postgres"
+export SPRING_DATASOURCE_PASSWORD="postgres"
+export SPRING_DATASOURCE_INITIAL_SIZE="25"
+export SPRING_DATASOURCE_MAX_WAIT_MILLIS="1000"
+export SPRING_DATASOURCE_MAX_ACTIVE="200"
+export SPRING_DATASOURCE_MIN_INDLE="25"
+export SPRING_DATASOURCE_MAX_IDLE="50"
 
 # oteo-web environment variables
 export REACT_APP_URL_OTEO_REST_API="http://localhost:18080/oteo-rest-api"
