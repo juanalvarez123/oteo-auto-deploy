@@ -88,10 +88,10 @@ function start_oteo {
 	-e SPRING_DATASOURCE_USERNAME=$SPRING_DATASOURCE_USERNAME \
 	-e SPRING_DATASOURCE_PASSWORD=$SPRING_DATASOURCE_PASSWORD \
 	-e SPRING_DATASOURCE_INITIAL_SIZE=$SPRING_DATASOURCE_INITIAL_SIZE \
-	-e SPRING_DATASOURCE_MAX_WAIT_MILLIS=$SPRING_DATASOURCE_MAX_WAIT_MILLIS \
 	-e SPRING_DATASOURCE_MAX_ACTIVE=$SPRING_DATASOURCE_MAX_ACTIVE \
-	-e SPRING_DATASOURCE_MIN_INDLE=$SPRING_DATASOURCE_MIN_INDLE \
+	-e SPRING_DATASOURCE_MIN_IDLE=$SPRING_DATASOURCE_MIN_IDLE \
 	-e SPRING_DATASOURCE_MAX_IDLE=$SPRING_DATASOURCE_MAX_IDLE \
+	-e SPRING_DATASOURCE_MAX_WAIT_MILLIS=$SPRING_DATASOURCE_MAX_WAIT_MILLIS \
 	-p 18080:8080 \
 	-p 18081:8081 \
 	$API_REST_IMAGE_NAME:$API_REST_IMAGE_TAG
@@ -144,6 +144,54 @@ function execute_liquibase {
 	cd $OTEO_AUTO_DEPLOY
 	}
 
+function deploy {
+
+	environment=$1
+	shift
+
+	case $environment in
+
+		stage)
+			cd $OTEO_PARENT
+			git checkout stage
+			git pull origin stage
+			git pull origin develop
+			git push origin stage
+			git checkout develop
+
+			cd $OTEO_WEB
+			git checkout stage
+			git pull origin stage
+			git pull origin develop
+			git push origin stage
+			git checkout develop
+			;;
+
+		production)
+			cd $OTEO_PARENT
+			git checkout production
+			git pull origin production
+			git pull origin develop
+			git push origin production
+			git checkout develop
+
+			cd $OTEO_WEB
+			git checkout production
+			git pull origin production
+			git pull origin develop
+			git push origin production
+			git checkout develop
+			;;
+
+		*)
+			echo 'Invalid option, use: . oteo.sh help'
+			;;
+
+	esac
+
+	cd $OTEO_AUTO_DEPLOY
+	}
+
 # Init function
 function oteo {
 
@@ -166,6 +214,11 @@ function oteo {
 			;;
 
 		liquibase)
+			execute_liquibase $environment
+			;;
+
+		deploy)
+			deploy $environment
 			execute_liquibase $environment
 			;;
 
