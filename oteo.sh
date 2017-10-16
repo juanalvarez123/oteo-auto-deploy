@@ -31,11 +31,23 @@ function calculateTime {
 	echo "Total: " $minutes:$seconds
 	}
 
-function stop_oteo {
+function stop {
 
-	docker rm -f $DATABASE_CONTAINER_NAME
-	docker rm -f $API_REST_CONTAINER_NAME
-	docker rm -f $WEB_CONTAINER_NAME
+	app=$1
+	shift
+
+	if [ -z "$app" ]; then
+		docker rm -f $DATABASE_CONTAINER_NAME
+		docker rm -f $API_REST_CONTAINER_NAME
+	else
+		case $app in
+			database) docker rm -f $DATABASE_CONTAINER_NAME ;;
+			rest-api) docker rm -f $API_REST_CONTAINER_NAME ;;
+			*) echo 'Invalid option, use: . oteo.sh help' ;;
+		esac
+	fi
+
+	cd $OTEO_AUTO_DEPLOY
 	}
 
 # Waits until specified container start
@@ -60,7 +72,7 @@ function wait_container {
 	echo
 	}
 
-function start_oteo {
+function start_database_application {
 
 	docker run -d --name=$DATABASE_CONTAINER_NAME \
 	-e POSTGRES_DB=$POSTGRES_DB \
@@ -74,6 +86,9 @@ function start_oteo {
 	# Execute liquibase for develop environment
 	cd $OTEO_DATABASE_LIQUIBASE
 	mvn liquibase:update -P develop
+	}
+
+function start_oteo_rest_api_application {
 
 	cd $OTEO_PARENT
 	mvn clean install -Dmaven.test.skip=true
@@ -95,25 +110,23 @@ function start_oteo {
 	-p 18080:8080 \
 	-p 18081:8081 \
 	$API_REST_IMAGE_NAME:$API_REST_IMAGE_TAG
+	}
 
-	#cd $OTEO_WEB/docker
-	#rm -rf oteo-web/
-	#mkdir oteo-web
-	#cd $OTEO_WEB
-	#cp index.html docker/oteo-web/
-	#cp -r app/ docker/oteo-web/app/
-    #
-	#cd $OTEO_WEB/docker
-	#docker build -t $WEB_IMAGE_NAME:$WEB_IMAGE_TAG .
-    #
-	#docker run -d --link=$API_REST_CONTAINER_NAME --name=$WEB_CONTAINER_NAME \
-	#-e "REACT_APP_URL_OTEO_REST_API=$REACT_APP_URL_OTEO_REST_API" \
-	#-p 18082:8080 \
-	#$WEB_IMAGE_NAME:$WEB_IMAGE_TAG
-    #
-	#cd $OTEO_WEB/docker
-	#rm -rf oteo-web/
-	#mkdir oteo-web
+function start {
+
+	app=$1
+	shift
+
+	if [ -z "$app" ]; then
+		start_database_application
+		start_oteo_rest_api_application
+	else
+		case $app in
+			database) start_database_application ;;
+			rest-api) start_oteo_rest_api_application ;;
+			*) echo 'Invalid option, use: . oteo.sh help' ;;
+		esac
+	fi
 
 	cd $OTEO_AUTO_DEPLOY
 	}
@@ -126,19 +139,9 @@ function execute_liquibase {
 	cd $OTEO_DATABASE_LIQUIBASE
 
 	case $environment in
-
-		stage)
-			mvn liquibase:update -P stage
-			;;
-
-		production)
-			mvn liquibase:update -P production
-			;;
-
-		*)
-			echo 'Invalid option, use: . oteo.sh help'
-			;;
-
+		stage) mvn liquibase:update -P stage ;;
+		production) mvn liquibase:update -P production ;;
+		*) echo 'Invalid option, use: . oteo.sh help' ;;
 	esac
 
 	cd $OTEO_AUTO_DEPLOY
@@ -198,28 +201,28 @@ function oteo {
 	initTimeSeconds=$(date -d now "+%s")
 	initTimeDate=$(date)
 
-	opc=$1
-	environment=$2
+	opc1=$1
+	opc2=$2
 	shift
 
-	case $opc in
+	case $opc1 in
 
 		start)
-			stop_oteo
-			start_oteo
+			stop $opc2
+			start $opc2
 			;;
 
 		stop)
-			stop_oteo
+			stop $opc2
 			;;
 
 		liquibase)
-			execute_liquibase $environment
+			execute_liquibase $opc2
 			;;
 
 		deploy)
-			deploy $environment
-			execute_liquibase $environment
+			deploy $opc2
+			execute_liquibase $opc2
 			;;
 
 		*)
