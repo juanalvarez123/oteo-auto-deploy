@@ -91,7 +91,7 @@ function start_database_application {
 function start_oteo_rest_api_application {
 
 	cd $OTEO_PARENT
-	mvn clean install -Dmaven.test.skip=true
+	mvn -T 2C install -Dmaven.test.skip=true -Dcobertura.skip
 	rm docker/*.jar
 	cp oteo-rest-api/target/*.jar docker/
 
@@ -139,6 +139,7 @@ function execute_liquibase {
 	cd $OTEO_DATABASE_LIQUIBASE
 
 	case $environment in
+		develop) mvn liquibase:update -P develop ;;
 		stage) mvn liquibase:update -P stage ;;
 		production) mvn liquibase:update -P production ;;
 		*) echo 'Invalid option, use: . oteo.sh help' ;;
